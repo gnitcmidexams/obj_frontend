@@ -82,7 +82,7 @@ h1 {
     text-align: left;
 }
 
-.paper-type select, #specialMidOptions select {
+.paper-type select {
     width: 100%;
     padding: 10px;
     margin-top: 0.5rem;
@@ -118,6 +118,7 @@ table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 1rem;
+    margin-bottom: 2rem; /* Added spacing between sections */
 }
 
 th, td {
@@ -136,4 +137,8 @@ th {
 
 #downloadButton:hover {
     background-color: #45a049;
+}
+
+h4 {
+    margin: 1rem 0; /* Spacing for section headers */
 }
