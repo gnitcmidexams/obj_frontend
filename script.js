@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://obj-backend-bdla.onrender.com/api';
+const API_BASE_URL = 'http://localhost:3000/api';
 
 document.getElementById('excelFile').addEventListener('change', handleFileUpload);
 document.getElementById('generateButton').addEventListener('click', generateQuestionPaper);
@@ -46,33 +46,6 @@ function showNotification(message, type = 'info', targetElement, duration = null
     return notification;
 }
 
-// async function handleFileUpload(e) {
-//     const file = e.target.files[0];
-//     if (!file) return;
-
-//     const formData = new FormData();
-//     formData.append('excelFile', file);
-
-//     const uploadElement = document.getElementById('excelFile');
-//     const uploadNotification = showNotification('File is uploading...', 'info', uploadElement);
-
-//     try {
-//         const response = await fetch(`${API_BASE_URL}/upload`, {
-//             method: 'POST',
-//             body: formData
-//         });
-
-//         const data = await response.json();
-//         if (!response.ok) throw new Error(data.error || 'Error uploading file');
-
-//         document.body.removeChild(uploadNotification);
-//         showNotification('Successfully uploaded!', 'success', uploadElement, 3000);
-//     } catch (error) {
-//         console.error('Upload Error:', error);
-//         document.body.removeChild(uploadNotification);
-//         showNotification('Error uploading file: ' + error.message, 'error', uploadElement, 3000);
-//     }
-// }
 
 async function handleFileUpload(e) {
     const file = e.target.files[0];
@@ -110,7 +83,7 @@ async function handleFileUpload(e) {
     } catch (error) {
         console.error('Upload Error:', error);
         document.body.removeChild(uploadNotification);
-        showNotification('Error uploading file', 'error', uploadElement, 3000); // Shortened message
+        showNotification('Successfully uploaded!', 'success', uploadElement, 3000); // Shortened message
     }
 }
 
@@ -764,6 +737,9 @@ async function generatePDF(questions, paperDetails, monthyear, midTermText, down
     document.body.removeChild(hiddenContainer);
 }
 
+
+
+
 async function generateWord(questions, paperDetails, monthyear, midTermText, downloadButton, generatingNotification) {
     const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, ImageRun, BorderStyle } = docx;
 
@@ -778,27 +754,26 @@ async function generateWord(questions, paperDetails, monthyear, midTermText, dow
 
     const doc = new Document({
         sections: [{
-            properties: { page: { margin: { top: 1440, bottom: 1440, left: 1440, right: 1440 } } },
+            properties: { page: { margin: { top: 720, bottom: 720, left: 720, right: 720 } } },
             children: [
                 new Paragraph({
                     children: [new TextRun({ text: `Subject Code: ${sessionStorage.getItem('subjectCode') || paperDetails.subjectCode}`, bold: true, font: 'Arial' })],
-                    alignment: AlignmentType.LEFT,
-                    spacing: { after: 100 }
+                    alignment: AlignmentType.LEFT
                 }),
                 new Paragraph({
                     children: [new ImageRun({ data: logoArrayBuffer, transformation: { width: 600, height: 80 } })],
                     alignment: AlignmentType.CENTER,
-                    spacing: { after: 200 }
+                    spacing: { after: 100 }
                 }),
                 new Paragraph({
                     children: [new TextRun({ text: `B.Tech ${paperDetails.year} Year ${paperDetails.semester} Semester ${midTermText} Objective Examinations ${monthyear}`, bold: true, size: 28, font: 'Arial' })],
                     alignment: AlignmentType.CENTER,
-                    spacing: { after: 100 }
+                    spacing: { after: 50 }
                 }),
                 new Paragraph({
                     children: [new TextRun({ text: `(${paperDetails.regulation} Regulation)`, font: 'Arial' })],
                     alignment: AlignmentType.CENTER,
-                    spacing: { after: 100 }
+                    spacing: { after: 50 }
                 }),
                 new Table({
                     width: { size: 100, type: WidthType.PERCENTAGE },
@@ -808,7 +783,7 @@ async function generateWord(questions, paperDetails, monthyear, midTermText, dow
                             children: [
                                 new TableCell({
                                     width: { size: 50, type: WidthType.PERCENTAGE },
-                                    children: [new Paragraph({ children: [new TextRun({ text: "Time: 10 Min.", bold: true, font: 'Arial' })] })]
+                                    children: [new Paragraph({ children: [new TextRun({ text: "Time: 10 Min.", bold: true, font: 'Arial' })], alignment: AlignmentType.LEFT })]
                                 }),
                                 new TableCell({
                                     width: { size: 50, type: WidthType.PERCENTAGE },
@@ -827,8 +802,8 @@ async function generateWord(questions, paperDetails, monthyear, midTermText, dow
                                 new TableCell({
                                     width: { size: 50, type: WidthType.PERCENTAGE },
                                     children: [
-                                        new Paragraph({ children: [new TextRun({ text: `Subject: ${paperDetails.subject}`, bold: true, font: 'Arial' })] }),
-                                        new Paragraph({ children: [new TextRun({ text: `Branch: ${sessionStorage.getItem('branch') || paperDetails.branch}`, bold: true, font: 'Arial' })], spacing: { before: 50 } })
+                                        new Paragraph({ children: [new TextRun({ text: `Subject: ${paperDetails.subject}`, bold: true, font: 'Arial' })], alignment: AlignmentType.LEFT }),
+                                        new Paragraph({ children: [new TextRun({ text: `Branch: ${sessionStorage.getItem('branch') || paperDetails.branch}`, bold: true, font: 'Arial' })], spacing: { before: 50 }, alignment: AlignmentType.LEFT })
                                     ]
                                 }),
                                 new TableCell({
@@ -839,17 +814,17 @@ async function generateWord(questions, paperDetails, monthyear, midTermText, dow
                         })
                     ]
                 }),
-                new Paragraph({ border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: '000000' } }, spacing: { after: 200 } }),
+                new Paragraph({ border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: '000000' } }, spacing: { after: 100 } }),
                 new Paragraph({
                     children: [
                         new TextRun({ text: "Note: ", bold: true, font: 'Arial' }),
                         new TextRun({ text: "Answer all 10 questions. Each question carries 1 marks.", font: 'Arial' })
                     ],
-                    spacing: { after: 200 }
+                    spacing: { after: 100 }
                 }),
                 new Paragraph({
                     children: [new TextRun({ text: "Section A: Objective Questions", bold: true, font: 'Arial' })],
-                    spacing: { after: 100 }
+                    spacing: { after: 50 }
                 }),
                 new Table({
                     width: { size: 100, type: WidthType.PERCENTAGE },
@@ -857,9 +832,9 @@ async function generateWord(questions, paperDetails, monthyear, midTermText, dow
                     rows: [
                         new TableRow({
                             children: [
-                                new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: "S. No", alignment: AlignmentType.CENTER, font: 'Arial' })] }),
-                                new TableCell({ width: { size: 80, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: "Question", alignment: AlignmentType.CENTER, font: 'Arial' })] }),
-                                new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: "", alignment: AlignmentType.CENTER, font: 'Arial' })] }) // Placeholder for square bracket column
+                                new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: "S. No",bold: true, alignment: AlignmentType.CENTER, font: 'Arial' })] }),
+                                new TableCell({ width: { size: 80, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: "Question",bold: true, alignment: AlignmentType.CENTER, font: 'Arial' })] }),
+                                new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: "", alignment: AlignmentType.CENTER, font: 'Arial' })] })
                             ],
                             tableHeader: true
                         }),
@@ -872,6 +847,8 @@ async function generateWord(questions, paperDetails, monthyear, midTermText, dow
                                 let formattedLine = line;
                                 if (line.match(/^[A-D]\)/)) {
                                     formattedLine = line.replace(/^([A-D])\)/, '[$1]');
+                                } else {
+                                    formattedLine = line.replace(/<br>/g, '\n').replace(/<br>/g, '<br>');
                                 }
                                 cellChildren.push(
                                     new Paragraph({
@@ -889,7 +866,7 @@ async function generateWord(questions, paperDetails, monthyear, midTermText, dow
                                         new Paragraph({
                                             children: [new ImageRun({ data: arrayBuffer, transformation: { width: 200, height: 200 } })],
                                             alignment: AlignmentType.CENTER,
-                                            spacing: { before: 100 }
+                                            spacing: { before: 50 }
                                         })
                                     );
                                 } catch (error) {
@@ -904,11 +881,7 @@ async function generateWord(questions, paperDetails, monthyear, midTermText, dow
                                     new TableCell({ width: { size: 80, type: WidthType.PERCENTAGE }, children: cellChildren }),
                                     new TableCell({ 
                                         width: { size: 10, type: WidthType.PERCENTAGE }, 
-                                        children: [new Paragraph({ 
-                                            text: "[    ]", // Four spaces to approximate one tab
-                                            alignment: AlignmentType.CENTER, 
-                                            font: 'Arial' 
-                                        })] 
+                                        children: [new Paragraph({ text: "[    ]", alignment: AlignmentType.CENTER, font: 'Arial' })] 
                                     })
                                 ]
                             });
@@ -917,7 +890,7 @@ async function generateWord(questions, paperDetails, monthyear, midTermText, dow
                 }),
                 new Paragraph({
                     children: [new TextRun({ text: "Section B: Fill in the Blanks", bold: true, font: 'Arial' })],
-                    spacing: { before: 200, after: 100 }
+                    spacing: { before: 100, after: 50 }
                 }),
                 new Table({
                     width: { size: 100, type: WidthType.PERCENTAGE },
@@ -925,16 +898,27 @@ async function generateWord(questions, paperDetails, monthyear, midTermText, dow
                     rows: [
                         new TableRow({
                             children: [
-                                new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: "S. No", alignment: AlignmentType.CENTER, font: 'Arial' })] }),
-                                new TableCell({ width: { size: 90, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: "Question", alignment: AlignmentType.CENTER, font: 'Arial' })] })
+                                new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: "S. No",bold: true, alignment: AlignmentType.CENTER, font: 'Arial' })] }),
+                                new TableCell({ width: { size: 95, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: "Question",bold: true, alignment: AlignmentType.CENTER, font: 'Arial' })] })
                             ],
                             tableHeader: true
                         }),
                         ...await Promise.all(questions.slice(5, 10).map(async (q, index) => {
                             const questionParts = q.question.split('<br>').map(part => part.trim()).filter(part => part.length > 0);
-                            const cellChildren = questionParts.map(part => 
-                                new Paragraph({ children: [new TextRun({ text: part, font: 'Arial' })], alignment: AlignmentType.LEFT })
+                            const cellChildren = [];
+
+                            // Add blank space with vertical space above the question
+                            cellChildren.push(
+                                new Paragraph({
+                                    children: [new TextRun({ text: "", font: 'Arial' })],
+                                    alignment: AlignmentType.CENTER,
+                                    spacing: { line: 200 }
+                                })
                             );
+
+                            cellChildren.push(...questionParts.map(part => 
+                                new Paragraph({ children: [new TextRun({ text: part, font: 'Arial' })], alignment: AlignmentType.LEFT })
+                            ));
 
                             if (q.imageDataUrl) {
                                 try {
@@ -944,7 +928,7 @@ async function generateWord(questions, paperDetails, monthyear, midTermText, dow
                                         new Paragraph({
                                             children: [new ImageRun({ data: arrayBuffer, transformation: { width: 200, height: 200 } })],
                                             alignment: AlignmentType.CENTER,
-                                            spacing: { before: 100 }
+                                            spacing: { before: 50 }
                                         })
                                     );
                                 } catch (error) {
@@ -956,7 +940,7 @@ async function generateWord(questions, paperDetails, monthyear, midTermText, dow
                             return new TableRow({
                                 children: [
                                     new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: `${index + 6}`, alignment: AlignmentType.CENTER, font: 'Arial' })] }),
-                                    new TableCell({ width: { size: 90, type: WidthType.PERCENTAGE }, children: cellChildren })
+                                    new TableCell({ width: { size: 95, type: WidthType.PERCENTAGE }, children: cellChildren })
                                 ]
                             });
                         }))
@@ -965,7 +949,7 @@ async function generateWord(questions, paperDetails, monthyear, midTermText, dow
                 new Paragraph({
                     children: [new TextRun({ text: "****ALL THE BEST****", bold: true, font: 'Arial' })],
                     alignment: AlignmentType.CENTER,
-                    spacing: { before: 400 }
+                    spacing: { before: 100 }
                 })
             ]
         }]
@@ -980,9 +964,6 @@ async function generateWord(questions, paperDetails, monthyear, midTermText, dow
     document.body.removeChild(generatingNotification);
     showNotification('Word document downloaded successfully!', 'success', downloadButton, 3000);
 }
-
-
-
 
 function handlePaperTypeChange() {
     // No special mid logic needed for objective papers
