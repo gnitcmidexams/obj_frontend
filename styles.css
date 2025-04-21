@@ -142,3 +142,12 @@ th {
 h4 {
     margin: 1rem 0; /* Spacing for section headers */
 }
+.watermark {
+    position: fixed; /* Keeps the watermark in a fixed position */
+    bottom: 20px; /* Adjust placement at the bottom */
+    right: 20px; /* Adjust placement to the right */
+    font-size: 1rem; /* Adjust font size */
+    color: rgba(0, 0, 0, 0.5); /* Adjust transparency */
+    pointer-events: none; /* Avoids interaction interference */
+    z-index: 100; /* Ensures visibility above other elements */
+}
