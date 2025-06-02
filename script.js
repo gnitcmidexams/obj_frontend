@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://obj-backend-bdla.onrender.com/api';
+const API_BASE_URL = 'http://localhost:3000/api';
 
 document.getElementById('excelFile').addEventListener('change', handleFileUpload);
 document.getElementById('generateButton').addEventListener('click', generateQuestionPaper);
@@ -185,7 +185,7 @@ function displayQuestionPaper(questions, paperDetails, allowEdit = true) {
             <p>(${paperDetails.regulation} Regulation)</p>
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 5px 0;">
                 <p><strong>Time:</strong> 10 Min.</p>
-                <p><strong>Max Marks:</strong> 20</p>
+                <p><strong>Max Marks:</strong> 10</p>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 5px 0;">
                 <p><strong>Subject:</strong> ${paperDetails.subject}</p>
@@ -193,7 +193,7 @@ function displayQuestionPaper(questions, paperDetails, allowEdit = true) {
                 <p><strong>Date:</strong> <span contenteditable="true" style="border-bottom: 1px solid black; min-width: 100px; display: inline-block;" oninput="sessionStorage.setItem('examDate', this.innerText)">${examDate}</span></p>
             </div>
             <hr style="border-top: 1px solid black; margin: 10px 0;">
-            <p style="text-align: left; margin: 10px 0;"><strong>Note:</strong> Answer all 10 questions. Each question carries 2 marks.</p>
+            <p style="text-align: left; margin: 10px 0;"><strong>Note:</strong> Answer all 10 questions. Each question carries 1 mark.</p>
             <h4 style="text-align: left; font-weight: bold;">Section A: Objective Questions (Q1-Q5)</h4>
             <table style="width: 100%; border-collapse: collapse; margin-top: 10px; border: 1px solid black;">
                 <thead>
@@ -207,24 +207,46 @@ function displayQuestionPaper(questions, paperDetails, allowEdit = true) {
                 </thead>
                 <tbody>
                 ${objectiveQuestions.map((q, index) => {
+                    // First, try to parse options from q.question
+                    let questionText = q.question || '';
+                    let options = [];
+
                     // Normalize and split question
                     const normalizedQuestion = q.question
                         .replace(/\\n/g, '\n')
                         .replace(/\r\n/g, '\n')
                         .replace(/\n\s*\n/g, '\n');
                     const lines = normalizedQuestion.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-                    const questionText = lines[0];
-                    const options = lines.slice(1).filter(line => /^[A-D]\)/.test(line));
+                    
+                    if (lines.length > 1) {
+                        questionText = lines[0] || '';
+                        // Updated regex to match A), A., a), a. for options
+                        options = lines.slice(1).filter(line => /^[A-Da-d][\.\)]\s+/.test(line));
+                    }
+
+                    // If options are empty, try to construct them from various possible field names
+                    if (options.length === 0) {
+                        const possibleOptions = [
+                            q.optionA || q.OptionA || q.option_a ? `A) ${q.optionA || q.OptionA || q.option_a}` : null,
+                            q.optionB || q.OptionB || q.option_b ? `B) ${q.optionB || q.OptionB || q.option_b}` : null,
+                            q.optionC || q.OptionC || q.option_c ? `C) ${q.optionC || q.OptionC || q.option_c}` : null,
+                            q.optionD || q.OptionD || q.option_d ? `D) ${q.optionD || q.OptionD || q.option_d}` : null
+                        ].filter(opt => opt !== null);
+
+                        if (possibleOptions.length > 0) {
+                            options = possibleOptions;
+                        }
+                    }
+
+                    console.log(`Question ${index + 1} (Full Object):`, JSON.stringify(q, null, 2));
+                    console.log(`Question ${index + 1} (Parsed):`, { questionText, options });
 
                     return `
                         <tr style="border: 1px solid black;">
                             <td style="border: 1px solid black; padding: 5px; text-align: center;">${index + 1}</td>
                             <td style="border: 1px solid black; padding: 5px;" contenteditable="true" oninput="updateQuestion(${index}, this.innerText)">
                                 <p style="margin: 0;">${questionText}</p>
-                                ${options.map(option => {
-                                    const formattedOption = option.replace(/^([A-D])\)/, '[$1]');
-                                    return `<p style="margin: 5px 0 0 20px;">${formattedOption}</p>`;
-                                }).join('')}
+                                ${options.length > 0 ? options.map(option => `<p style="margin: 5px 0 0 20px;">${option}</p>`).join('') : '<p style="margin: 5px 0 0 20px; color: red;">[Options not found - check console logs]</p>'}
                                 ${q.imageDataUrl ? `
                                     <div style="max-width: 200px; max-height: 200px; margin-top: 10px;">
                                         <img src="${q.imageDataUrl}" style="max-width: 100%; max-height: 100%; display: block;" onload="console.log('Image displayed for question ${index + 1}')" onerror="console.error('Image failed to display for question ${index + 1}')">
@@ -383,177 +405,6 @@ async function downloadQuestionPaper() {
         showNotification(`Error generating ${format.toUpperCase()} document: ${error.message}`, 'error', downloadButton, 3000);
     }
 }
-
-// async function generatePDF(questions, paperDetails, monthyear, midTermText, downloadButton, generatingNotification) {
-//     const hiddenContainer = document.createElement('div');
-//     hiddenContainer.style.position = 'absolute';
-//     hiddenContainer.style.left = '-9999px';
-//     hiddenContainer.style.top = '-9999px';
-//     document.body.appendChild(hiddenContainer);
-
-//     const { jsPDF } = window.jspdf;
-//     const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4', compress: true });
-
-//     const pageWidth = pdf.internal.pageSize.getWidth();
-//     const pageHeight = pdf.internal.pageSize.getHeight();
-//     const margin = 9;
-//     const maxContentHeight = pageHeight - 2 * margin;
-//     let currentYPosition = margin;
-
-//     const checkPageOverflow = async (contentHeight) => {
-//         if (currentYPosition + contentHeight > maxContentHeight) {
-//             pdf.addPage();
-//             currentYPosition = margin;
-//         }
-//     };
-
-//     const renderBlock = async (htmlContent, blockWidth, addSpacing = false) => {
-//         hiddenContainer.innerHTML = htmlContent;
-//         hiddenContainer.style.margin = '10';
-//         hiddenContainer.style.padding = '0';
-//         const canvas = await html2canvas(hiddenContainer, { scale: 2, useCORS: true });
-//         const imgData = canvas.toDataURL('image/jpeg');
-//         const imgWidth = blockWidth;
-//         const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-//         await checkPageOverflow(imgHeight);
-//         pdf.addImage(imgData, 'JPEG', margin, currentYPosition, imgWidth, imgHeight);
-//         currentYPosition += imgHeight + (addSpacing ? 2 : 0);
-//     };
-
-//     const headerHtml = `
-//         <div style="width: ${pageWidth - 2 * margin}mm; font-family: Helvetica; text-align: center;">
-//             <div style="display: flex; flex-direction: column; align-items: center; border-bottom: 1px solid black; padding-bottom: 5px;">
-//                 <div style="text-align: left; width: 100%; font-weight: semi-bold;">
-//                     <p><strong>Subject Code:</strong> ${sessionStorage.getItem('subjectCode') || paperDetails.subjectCode}</p>
-//                 </div>
-//                 <div style="flex-grow: 1; text-align: center;">
-//                     <img src="image.jpeg" alt="Institution Logo" style="max-width: 100%; height: auto;">
-//                 </div>
-//             </div>
-//             <h3>B.Tech ${paperDetails.year} Year ${paperDetails.semester} Semester ${midTermText} Objective Examinations ${monthyear}</h3>
-//             <p>(${paperDetails.regulation} Regulation)</p>
-//             <div style="display: flex; justify-content: space-between; align-items: center; padding: 5px 0;">
-//                 <p><span style="float: left;"><strong>Time:</strong> 10 Min.</span></p>
-//                 <p><span style="float: right;"><strong>Max Marks:</strong> 20</span></p>
-//             </div>
-//             <div style="display: flex; justify-content: space-between; margin-top:0px; align-items: center; padding: 2px 0;">
-//                 <p><strong>Subject:</strong> ${paperDetails.subject}</p>
-//                 <p><span style="float: left;"><strong>Branch:</strong> ${sessionStorage.getItem('branch') || paperDetails.branch}</span></p>
-//                 <p><span style="float: right; margin-left: 20px;"><strong>Date:</strong> ${sessionStorage.getItem('examDate') || ''}</span></p>
-//             </div>
-//             <hr style="border-top: 1px solid black; margin: 2px 0;">
-//         </div>
-//     `;
-//     await renderBlock(headerHtml, pageWidth - 2 * margin, true);
-
-//     const noteHtml = `
-//         <div style="width: ${pageWidth - 2 * margin}mm; font-family: Helvetica; text-align: left; font-size:14px; margin-top: 5px;">
-//             <p><strong>Note:</strong> Answer all 10 questions. Each question carries 2 marks.</p>
-//         </div>
-//     `;
-//     await renderBlock(noteHtml, pageWidth - 2 * margin, true);
-
-//     const objectiveHeaderHtml = `
-//         <div style="width: ${pageWidth - 2 * margin}mm; font-family: Helvetica;">
-//             <h4 style="text-align: left; margin: 5px 0;">Section A: Objective Questions (Q1-Q5)</h4>
-//             <table style="width: 100%; border-collapse: collapse; table-layout: fixed; margin: 0; padding: 0;">
-//                 <thead>
-//                     <tr style="background-color: #f2f2f2; font-size:14px;">
-//                         <th style="padding: 5px; border: 1px solid black; width: 10%; text-align: center;">S. No</th>
-//                         <th style="padding: 5px; border: 1px solid black; width: 70%; text-align: center;">Question</th>
-//                         <th style="padding: 5px; border: 1px solid black; width: 10%; text-align: center;">Unit</th>
-//                         <th style="padding: 5px; border: 1px solid black; width: 10%; text-align: center;">CO</th>
-//                     </tr>
-//                 </thead>
-//             </table>
-//         </div>
-//     `;
-//     await renderBlock(objectiveHeaderHtml, pageWidth - 2 * margin, true);
-
-//     const objectiveQuestions = questions.slice(0, 5);
-//     for (let index = 0; index < objectiveQuestions.length; index++) {
-//         const q = objectiveQuestions[index];
-//         const rowHtml = `
-//             <div style="width: ${pageWidth - 2 * margin}mm; font-family: Helvetica; margin: 0; padding: 0;">
-//                 <table style="width: 100%; border-collapse: collapse; table-layout: fixed; margin: 0; padding: 0;">
-//                     <tbody style="margin: 0; padding: 0; font-size:14px;">
-//                         <tr style="margin: 0; padding: 0;">
-//                             <td style="padding: 5px; border-top: 0px solid black; border-left: 1px solid black; border-right: 1px solid black; border-bottom: 1px solid black; text-align: center; width: 10%; margin: 0;">${index + 1}</td>
-//                             <td style="padding: 5px; font-size:14px; border-top: 0px solid black; border-left: 1px solid black; border-right: 1px solid black; border-bottom: 1px solid black; width: 70%; margin: 0;">
-//                                 ${q.question}
-//                                 ${q.imageDataUrl ? `
-//                                     <div style="max-width: 200px; max-height: 200px; margin: 0; padding: 0;">
-//                                         <img src="${q.imageDataUrl}" style="max-width: 100%; max-height: 100%; display: block; margin: 0; padding: 0;">
-//                                     </div>
-//                                 ` : ''}
-//                             </td>
-//                             <td style="padding: 5px; border-top: 0px solid black; border-left: 1px solid black; border-right: 1px solid black; border-bottom: 1px solid black; width: 10%; text-align: center; margin: 0;">${q.unit}</td>
-//                             <td style="padding: 5px; border-top: 0px solid black; border-left: 1px solid black; border-right: 1px solid black; border-bottom: 1px solid black; width: 10%; text-align: center; margin: 0;">${getCOValue(q.unit)}</td>
-//                         </tr>
-//                     </tbody>
-//                 </table>
-//             </div>
-//         `;
-//         await renderBlock(rowHtml, pageWidth - 2 * margin, false);
-//     }
-
-//     const fillInTheBlankHeaderHtml = `
-//         <div style="width: ${pageWidth - 2 * margin}mm; font-family: Helvetica;">
-//             <h4 style="text-align: left; margin: 5px 0;">Section B: Fill in the Blanks (Q6-Q10)</h4>
-//             <table style="width: 100%; border-collapse: collapse; table-layout: fixed; margin: 0; padding: 0;">
-//                 <thead>
-//                     <tr style="background-color: #f2f2f2; font-size:14px;">
-//                         <th style="padding: 5px; border: 1px solid black; width: 10%; text-align: center;">S. No</th>
-//                         <th style="padding: 5px; border: 1px solid black; width: 70%; text-align: center;">Question</th>
-//                         <th style="padding: 5px; border: 1px solid black; width: 10%; text-align: center;">Unit</th>
-//                         <th style="padding: 5px; border: 1px solid black; width: 10%; text-align: center;">CO</th>
-//                     </tr>
-//                 </thead>
-//             </table>
-//         </div>
-//     `;
-//     await renderBlock(fillInTheBlankHeaderHtml, pageWidth - 2 * margin, true);
-
-//     const fillInTheBlankQuestions = questions.slice(5, 10);
-//     for (let index = 0; index < fillInTheBlankQuestions.length; index++) {
-//         const q = fillInTheBlankQuestions[index];
-//         const rowHtml = `
-//             <div style="width: ${pageWidth - 2 * margin}mm; font-family: Helvetica; margin: 0; padding: 0;">
-//                 <table style="width: 100%; border-collapse: collapse; table-layout: fixed; margin: 0; padding: 0;">
-//                     <tbody style="margin: 0; padding: 0; font-size:14px;">
-//                         <tr style="margin: 0; padding: 0;">
-//                             <td style="padding: 5px; border-top: 0px solid black; border-left: 1px solid black; border-right: 1px solid black; border-bottom: 1px solid black; text-align: center; width: 10%; margin: 0;">${index + 6}</td>
-//                             <td style="padding: 5px; font-size:14px; border-top: 0px solid black; border-left: 1px solid black; border-right: 1px solid black; border-bottom: 1px solid black; width: 70%; margin: 0;">
-//                                 ${q.question}
-//                                 ${q.imageDataUrl ? `
-//                                     <div style="max-width: 200px; max-height: 200px; margin: 0; padding: 0;">
-//                                         <img src="${q.imageDataUrl}" style="max-width: 100%; max-height: 100%; display: block; margin: 0; padding: 0;">
-//                                     </div>
-//                                 ` : ''}
-//                             </td>
-//                             <td style="padding: 5px; border-top: 0px solid black; border-left: 1px solid black; border-right: 1px solid black; border-bottom: 1px solid black; width: 10%; text-align: center; margin: 0;">${q.unit}</td>
-//                             <td style="padding: 5px; border-top: 0px solid black; border-left: 1px solid black; border-right: 1px solid black; border-bottom: 1px solid black; width: 10%; text-align: center; margin: 0;">${getCOValue(q.unit)}</td>
-//                         </tr>
-//                     </tbody>
-//                 </table>
-//             </div>
-//         `;
-//         await renderBlock(rowHtml, pageWidth - 2 * margin, false);
-//     }
-
-//     const footerHtml = `
-//         <div style="width: ${pageWidth - 2 * margin}mm; font-family: Helvetica; text-align: center; margin-top: 20px;">
-//             <p style="font-weight: bold;">****ALL THE BEST****</p>
-//         </div>
-//     `;
-//     await renderBlock(footerHtml, pageWidth - 2 * margin, true);
-
-//     pdf.save(`${paperDetails.subject}_Objective.pdf`);
-//     document.body.removeChild(generatingNotification);
-//     showNotification('PDF downloaded successfully!', 'success', downloadButton, 3000);
-//     document.body.removeChild(hiddenContainer);
-// }
 
 async function generatePDF(questions, paperDetails, monthyear, midTermText, downloadButton, generatingNotification) {
     const hiddenContainer = document.createElement('div');
@@ -757,7 +608,7 @@ async function generateWord(questions, paperDetails, monthyear, midTermText, dow
             properties: { page: { margin: { top: 720, bottom: 720, left: 720, right: 720 } } },
             children: [
                 new Paragraph({
-                    children: [new TextRun({ text: `Subject Code: ${sessionStorage.getItem('subjectCode') || paperDetails.subjectCode}`, bold: true, font: 'Arial' })],
+                    children: [new TextRun({ text: `Subject Code: ${sessionStorage.getItem('subjectCode') || paperDetails.subjectCode}`, bold: true, font: 'Times New Roman' })],
                     alignment: AlignmentType.LEFT
                 }),
                 new Paragraph({
@@ -766,12 +617,12 @@ async function generateWord(questions, paperDetails, monthyear, midTermText, dow
                     spacing: { after: 100 }
                 }),
                 new Paragraph({
-                    children: [new TextRun({ text: `B.Tech ${paperDetails.year} Year ${paperDetails.semester} Semester ${midTermText} Objective Examinations ${monthyear}`, bold: true, size: 28, font: 'Arial' })],
+                    children: [new TextRun({ text: `B.Tech ${paperDetails.year} Year ${paperDetails.semester} Semester ${midTermText} Objective Examinations ${monthyear}`, bold: true, size: 28, font: 'Times New Roman' })],
                     alignment: AlignmentType.CENTER,
                     spacing: { after: 50 }
                 }),
                 new Paragraph({
-                    children: [new TextRun({ text: `(${paperDetails.regulation} Regulation)`, font: 'Arial' })],
+                    children: [new TextRun({ text: `(${paperDetails.regulation} Regulation)`, font: 'Times New Roman' })],
                     alignment: AlignmentType.CENTER,
                     spacing: { after: 50 }
                 }),
@@ -783,11 +634,11 @@ async function generateWord(questions, paperDetails, monthyear, midTermText, dow
                             children: [
                                 new TableCell({
                                     width: { size: 50, type: WidthType.PERCENTAGE },
-                                    children: [new Paragraph({ children: [new TextRun({ text: "Time: 10 Min.", bold: true, font: 'Arial' })], alignment: AlignmentType.LEFT })]
+                                    children: [new Paragraph({ children: [new TextRun({ text: "Time: 10 Min.", bold: true, font: 'Times New Roman' })], alignment: AlignmentType.LEFT })]
                                 }),
                                 new TableCell({
                                     width: { size: 50, type: WidthType.PERCENTAGE },
-                                    children: [new Paragraph({ children: [new TextRun({ text: "Max Marks: 20", bold: true, font: 'Arial' })], alignment: AlignmentType.RIGHT })]
+                                    children: [new Paragraph({ children: [new TextRun({ text: "Max Marks: 20", bold: true, font: 'Times New Roman' })], alignment: AlignmentType.RIGHT })]
                                 })
                             ]
                         })
@@ -802,13 +653,18 @@ async function generateWord(questions, paperDetails, monthyear, midTermText, dow
                                 new TableCell({
                                     width: { size: 50, type: WidthType.PERCENTAGE },
                                     children: [
-                                        new Paragraph({ children: [new TextRun({ text: `Subject: ${paperDetails.subject}`, bold: true, font: 'Arial' })], alignment: AlignmentType.LEFT }),
-                                        new Paragraph({ children: [new TextRun({ text: `Branch: ${sessionStorage.getItem('branch') || paperDetails.branch}`, bold: true, font: 'Arial' })], spacing: { before: 50 }, alignment: AlignmentType.LEFT })
+                                        new Paragraph({ children: [new TextRun({ text: `Subject: ${paperDetails.subject}`, bold: true, font: 'Times New Roman' })], alignment: AlignmentType.LEFT }),
+                                        new Paragraph({ children: [new TextRun({ text: `Branch: ${sessionStorage.getItem('branch') || paperDetails.branch}`, bold: true, font: 'Times New Roman' })], spacing: { before: 50 }, alignment: AlignmentType.LEFT }),
+                                        new Paragraph({ children: [new TextRun({ text: "Name: ______________________", bold: true, font: 'Times New Roman' })], spacing: { before: 50 }, alignment: AlignmentType.LEFT })
                                     ]
                                 }),
                                 new TableCell({
                                     width: { size: 50, type: WidthType.PERCENTAGE },
-                                    children: [new Paragraph({ children: [new TextRun({ text: `Date: ${sessionStorage.getItem('examDate') || ''}`, bold: true, font: 'Arial' })], alignment: AlignmentType.RIGHT })]
+                                    children: [
+                                        new Paragraph({ children: [new TextRun({ text: `Date: ${sessionStorage.getItem('examDate') || ''}`, bold: true, font: 'Times New Roman' })], alignment: AlignmentType.RIGHT }),
+                                        new Paragraph({ children: [new TextRun({ text: '', bold: true, font: 'Times New Roman' })], alignment: AlignmentType.RIGHT }),
+                                        new Paragraph({ children: [new TextRun({ text: "Roll.No: ________________________", bold: true, font: 'Times New Roman' })], spacing: { before: 50 }, alignment: AlignmentType.RIGHT })
+                                    ]
                                 })
                             ]
                         })
@@ -817,13 +673,13 @@ async function generateWord(questions, paperDetails, monthyear, midTermText, dow
                 new Paragraph({ border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: '000000' } }, spacing: { after: 100 } }),
                 new Paragraph({
                     children: [
-                        new TextRun({ text: "Note: ", bold: true, font: 'Arial' }),
-                        new TextRun({ text: "Answer all 10 questions. Each question carries 1 marks.", font: 'Arial' })
+                        new TextRun({ text: "Note: ", bold: true, font: 'Times New Roman' }),
+                        new TextRun({ text: "Answer all 10 questions. Each question carries 1 marks.", font: 'Times New Roman' })
                     ],
                     spacing: { after: 100 }
                 }),
                 new Paragraph({
-                    children: [new TextRun({ text: "Section A: Objective Questions", bold: true, font: 'Arial' })],
+                    children: [new TextRun({ text: "Section A: Objective Questions", bold: true, font: 'Times New Roman' })],
                     spacing: { after: 50 }
                 }),
                 new Table({
@@ -832,9 +688,9 @@ async function generateWord(questions, paperDetails, monthyear, midTermText, dow
                     rows: [
                         new TableRow({
                             children: [
-                                new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: "S. No",bold: true, alignment: AlignmentType.CENTER, font: 'Arial' })] }),
-                                new TableCell({ width: { size: 80, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: "Question",bold: true, alignment: AlignmentType.CENTER, font: 'Arial' })] }),
-                                new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: "", alignment: AlignmentType.CENTER, font: 'Arial' })] })
+                                new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: "S. No", bold: true, alignment: AlignmentType.CENTER, font: 'Times New Roman' })] }),
+                                new TableCell({ width: { size: 80, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: "Question", bold: true, alignment: AlignmentType.CENTER, font: 'Times New Roman' })] }),
+                                new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: "", alignment: AlignmentType.CENTER, font: 'Times New Roman' })] })
                             ],
                             tableHeader: true
                         }),
@@ -852,7 +708,7 @@ async function generateWord(questions, paperDetails, monthyear, midTermText, dow
                                 }
                                 cellChildren.push(
                                     new Paragraph({
-                                        children: [new TextRun({ text: formattedLine, font: 'Arial' })],
+                                        children: [new TextRun({ text: formattedLine, font: 'Times New Roman' })],
                                         alignment: AlignmentType.LEFT
                                     })
                                 );
@@ -871,17 +727,17 @@ async function generateWord(questions, paperDetails, monthyear, midTermText, dow
                                     );
                                 } catch (error) {
                                     console.error(`Error loading image for question ${index + 1}:`, error);
-                                    cellChildren.push(new Paragraph({ text: "[Image could not be loaded]", font: 'Arial' }));
+                                    cellChildren.push(new Paragraph({ text: "[Image could not be loaded]", font: 'Times New Roman' }));
                                 }
                             }
 
                             return new TableRow({
                                 children: [
-                                    new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: `${index + 1}`, alignment: AlignmentType.CENTER, font: 'Arial' })] }),
+                                    new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: `${index + 1}`, alignment: AlignmentType.CENTER, font: 'Times New Roman' })] }),
                                     new TableCell({ width: { size: 80, type: WidthType.PERCENTAGE }, children: cellChildren }),
                                     new TableCell({ 
                                         width: { size: 10, type: WidthType.PERCENTAGE }, 
-                                        children: [new Paragraph({ text: "[    ]", alignment: AlignmentType.CENTER, font: 'Arial' })] 
+                                        children: [new Paragraph({ text: "[    ]", alignment: AlignmentType.CENTER, font: 'Times New Roman' })] 
                                     })
                                 ]
                             });
@@ -889,7 +745,7 @@ async function generateWord(questions, paperDetails, monthyear, midTermText, dow
                     ]
                 }),
                 new Paragraph({
-                    children: [new TextRun({ text: "Section B: Fill in the Blanks", bold: true, font: 'Arial' })],
+                    children: [new TextRun({ text: "Section B: Fill in the Blanks", bold: true, font: 'Times New Roman' })],
                     spacing: { before: 100, after: 50 }
                 }),
                 new Table({
@@ -898,8 +754,8 @@ async function generateWord(questions, paperDetails, monthyear, midTermText, dow
                     rows: [
                         new TableRow({
                             children: [
-                                new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: "S. No",bold: true, alignment: AlignmentType.CENTER, font: 'Arial' })] }),
-                                new TableCell({ width: { size: 95, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: "Question",bold: true, alignment: AlignmentType.CENTER, font: 'Arial' })] })
+                                new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: "S. No", bold: true, alignment: AlignmentType.CENTER, font: 'Times New Roman' })] }),
+                                new TableCell({ width: { size: 95, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: "Question", bold: true, alignment: AlignmentType.CENTER, font: 'Times New Roman' })] })
                             ],
                             tableHeader: true
                         }),
@@ -910,14 +766,14 @@ async function generateWord(questions, paperDetails, monthyear, midTermText, dow
                             // Add blank space with vertical space above the question
                             cellChildren.push(
                                 new Paragraph({
-                                    children: [new TextRun({ text: "", font: 'Arial' })],
+                                    children: [new TextRun({ text: "", font: 'Times New Roman' })],
                                     alignment: AlignmentType.CENTER,
                                     spacing: { line: 200 }
                                 })
                             );
 
                             cellChildren.push(...questionParts.map(part => 
-                                new Paragraph({ children: [new TextRun({ text: part, font: 'Arial' })], alignment: AlignmentType.LEFT })
+                                new Paragraph({ children: [new TextRun({ text: part, font: 'Times New Roman' })], alignment: AlignmentType.LEFT })
                             ));
 
                             if (q.imageDataUrl) {
@@ -933,13 +789,13 @@ async function generateWord(questions, paperDetails, monthyear, midTermText, dow
                                     );
                                 } catch (error) {
                                     console.error(`Error loading image for question ${index + 6}:`, error);
-                                    cellChildren.push(new Paragraph({ text: "[Image could not be loaded]", font: 'Arial' }));
+                                    cellChildren.push(new Paragraph({ text: "[Image could not be loaded]", font: 'Times New Roman' }));
                                 }
                             }
 
                             return new TableRow({
                                 children: [
-                                    new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: `${index + 6}`, alignment: AlignmentType.CENTER, font: 'Arial' })] }),
+                                    new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: `${index + 6}`, alignment: AlignmentType.CENTER, font: 'Times New Roman' })] }),
                                     new TableCell({ width: { size: 95, type: WidthType.PERCENTAGE }, children: cellChildren })
                                 ]
                             });
@@ -947,7 +803,7 @@ async function generateWord(questions, paperDetails, monthyear, midTermText, dow
                     ]
                 }),
                 new Paragraph({
-                    children: [new TextRun({ text: "****ALL THE BEST****", bold: true, font: 'Arial' })],
+                    children: [new TextRun({ text: "****ALL THE BEST****", bold: true, font: 'Times New Roman' })],
                     alignment: AlignmentType.CENTER,
                     spacing: { before: 100 }
                 })
