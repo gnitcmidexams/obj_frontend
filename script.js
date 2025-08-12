@@ -626,7 +626,7 @@ async function generateWord(questions, paperDetails, monthyear, midTermText, dow
                     alignment: AlignmentType.LEFT
                 }),
                 new Paragraph({
-                    children: [new ImageRun({ data: logoArrayBuffer, transformation: { width: 600, height: 80 } })],
+                    children: [new ImageRun({ data: logoArrayBuffer, transformation: { width: 600, height: 60 } })],
                     alignment: AlignmentType.CENTER,
                     spacing: { after: 100 }
                 }),
