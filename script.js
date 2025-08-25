@@ -70,7 +70,7 @@ async function handleFileUpload(e) {
     } catch (error) {
         // console.error('Upload Error:', error);
         document.body.removeChild(uploadNotification);
-        showNotification('uploaded sucessfully: ' + error.message, 'error', uploadElement, 5000);
+        showNotification('Successfully uploaded!', 'success', uploadElement, 3000);
     }
 }
 
