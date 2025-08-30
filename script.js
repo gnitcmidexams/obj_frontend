@@ -755,7 +755,8 @@ async function generateWord(questions, paperDetails, monthyear, midTermText, dow
                             const cellChildren = [
                                 new Paragraph({
                                     children: [new TextRun({ text: ` ${q.question}`, font: 'Times New Roman' })],
-                                    alignment: AlignmentType.LEFT
+                                    alignment: AlignmentType.LEFT,
+                                    spacing: { before: 200 } // Added spacing before the question for extra space
                                 })
                             ];
 
