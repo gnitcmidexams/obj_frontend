@@ -696,16 +696,37 @@ async function generateWord(questions, paperDetails, monthyear, midTermText, dow
                             const cellChildren = [
                                 new Paragraph({
                                     children: [new TextRun({ text: ` ${q.question}`, font: 'Times New Roman' })],
-                                    alignment: AlignmentType.LEFT
+                                    alignment: AlignmentType.LEFT,
+                                    keepLines: true
                                 })
                             ];
 
                             if (q.type === 'multiple-choice' && q.optionA && q.optionB && q.optionC && q.optionD) {
                                 cellChildren.push(
-                                    new Paragraph({ children: [new TextRun({ text: `a) ${q.optionA}`, font: 'Times New Roman' })], alignment: AlignmentType.LEFT, indent: { left: 360 } }),
-                                    new Paragraph({ children: [new TextRun({ text: `b) ${q.optionB}`, font: 'Times New Roman' })], alignment: AlignmentType.LEFT, indent: { left: 360 } }),
-                                    new Paragraph({ children: [new TextRun({ text: `c) ${q.optionC}`, font: 'Times New Roman' })], alignment: AlignmentType.LEFT, indent: { left: 360 } }),
-                                    new Paragraph({ children: [new TextRun({ text: `d) ${q.optionD}`, font: 'Times New Roman' })], alignment: AlignmentType.LEFT, indent: { left: 360 } })
+                                    new Paragraph({ 
+                                        children: [new TextRun({ text: `a) ${q.optionA}`, font: 'Times New Roman' })], 
+                                        alignment: AlignmentType.LEFT, 
+                                        indent: { left: 360 }, 
+                                        keepLines: true 
+                                    }),
+                                    new Paragraph({ 
+                                        children: [new TextRun({ text: `b) ${q.optionB}`, font: 'Times New Roman' })], 
+                                        alignment: AlignmentType.LEFT, 
+                                        indent: { left: 360 }, 
+                                        keepLines: true 
+                                    }),
+                                    new Paragraph({ 
+                                        children: [new TextRun({ text: `c) ${q.optionC}`, font: 'Times New Roman' })], 
+                                        alignment: AlignmentType.LEFT, 
+                                        indent: { left: 360 }, 
+                                        keepLines: true 
+                                    }),
+                                    new Paragraph({ 
+                                        children: [new TextRun({ text: `d) ${q.optionD}`, font: 'Times New Roman' })], 
+                                        alignment: AlignmentType.LEFT, 
+                                        indent: { left: 360 }, 
+                                        keepLines: true 
+                                    })
                                 );
                             }
 
@@ -717,20 +738,38 @@ async function generateWord(questions, paperDetails, monthyear, midTermText, dow
                                         new Paragraph({
                                             children: [new ImageRun({ data: arrayBuffer, transformation: { width: 200, height: 200 } })],
                                             alignment: AlignmentType.CENTER,
-                                            spacing: { before: 50 }
+                                            spacing: { before: 50 },
+                                            keepLines: true
                                         })
                                     );
                                 } catch (error) {
                                     console.error(`Error loading image for question ${index + 1}:`, error);
-                                    cellChildren.push(new Paragraph({ text: "[Image could not be loaded]", font: 'Times New Roman' }));
+                                    cellChildren.push(
+                                        new Paragraph({ 
+                                            text: "[Image could not be loaded]", 
+                                            font: 'Times New Roman', 
+                                            keepLines: true 
+                                        })
+                                    );
                                 }
                             }
 
                             return new TableRow({
+                                cantSplit: true, // Prevent row from splitting across pages
                                 children: [
-                                    new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: `${index + 1}`, alignment: AlignmentType.CENTER, font: 'Times New Roman' })] }),
-                                    new TableCell({ width: { size: 70, type: WidthType.PERCENTAGE }, children: cellChildren }),
-                                    new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: "[    ]", alignment: AlignmentType.CENTER, font: 'Times New Roman' })] })
+                                    new TableCell({ 
+                                        width: { size: 10, type: WidthType.PERCENTAGE }, 
+                                        children: [new Paragraph({ text: `${index + 1}`, alignment: AlignmentType.CENTER, font: 'Times New Roman' })] 
+                                    }),
+                                    new TableCell({ 
+                                        width: { size: 70, type: WidthType.PERCENTAGE }, 
+                                        children: cellChildren, 
+                                        keepNext: true 
+                                    }),
+                                    new TableCell({ 
+                                        width: { size: 10, type: WidthType.PERCENTAGE }, 
+                                        children: [new Paragraph({ text: "[    ]", alignment: AlignmentType.CENTER, font: 'Times New Roman' })] 
+                                    })
                                 ]
                             });
                         }))
@@ -756,7 +795,7 @@ async function generateWord(questions, paperDetails, monthyear, midTermText, dow
                                 new Paragraph({
                                     children: [new TextRun({ text: ` ${q.question}`, font: 'Times New Roman' })],
                                     alignment: AlignmentType.LEFT,
-                                    spacing: { before: 200 } // Added spacing before the question for extra space
+                                    spacing: { before: 200 }
                                 })
                             ];
 
@@ -804,7 +843,6 @@ async function generateWord(questions, paperDetails, monthyear, midTermText, dow
     document.body.removeChild(generatingNotification);
     showNotification('Word document downloaded successfully!', 'success', downloadButton, 3000);
 }
-
 function handlePaperTypeChange() {
     // No special logic needed for objective papers
 }
